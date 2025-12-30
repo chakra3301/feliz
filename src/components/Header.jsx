@@ -1,9 +1,8 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import logoImage from '../../assets/feliz_.png'
-import groupImage from '../../assets/group1.png'
-import group1Image from '../../assets/Group 1.png'
-import threeImage from '../../assets/3.png'
+import leftImage from '../../assets/left.png'
+import rightImage from '../../assets/right.png'
 import './Header.css'
 
 const Header = ({ cartItemCount, onCartClick, selectedCategory, onCategorySelect }) => {
@@ -31,12 +30,11 @@ const Header = ({ cartItemCount, onCartClick, selectedCategory, onCategorySelect
     <header className="header">
       <div className="header-container">
         <div className="header-left">
-          <img src={threeImage} alt="3" className="header-three-image" />
+          <img src={leftImage} alt="Left" className="header-left-image" />
         </div>
         
         <div className="header-center">
           <Link to="/" className="logo" onClick={() => onCategorySelect(null)}>
-            <img src={group1Image} alt="Group 1" className="logo-left-image" />
             <img src={logoImage} alt="FELIZ" className="logo-image" />
           </Link>
           <nav className="desktop-nav">
@@ -56,32 +54,37 @@ const Header = ({ cartItemCount, onCartClick, selectedCategory, onCategorySelect
         </div>
 
         <div className="header-right">
-          <div className="currency-selector">
-            <select 
-              value={currency} 
-              onChange={(e) => setCurrency(e.target.value)}
-              className="currency-select"
-            >
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-              <option value="GBP">GBP</option>
-            </select>
-          </div>
+          <div className="header-right-image-container">
+            <img src={rightImage} alt="Right" className="header-right-image" />
+            <div className="header-right-overlay">
+              <div className="currency-selector">
+                <select 
+                  value={currency} 
+                  onChange={(e) => setCurrency(e.target.value)}
+                  className="currency-select"
+                >
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
+              </div>
 
-          <button 
-            className="cart-button"
-            onClick={onCartClick}
-            aria-label="Shopping cart"
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
-            {cartItemCount > 0 && (
-              <span className="cart-badge">{cartItemCount}</span>
-            )}
-          </button>
+              <button 
+                className="cart-button"
+                onClick={onCartClick}
+                aria-label="Shopping cart"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                  <line x1="3" y1="6" x2="21" y2="6"></line>
+                  <path d="M16 10a4 4 0 0 1-8 0"></path>
+                </svg>
+                {cartItemCount > 0 && (
+                  <span className="cart-badge">{cartItemCount}</span>
+                )}
+              </button>
+            </div>
+          </div>
 
           <button 
             className="menu-button mobile-menu-button"
