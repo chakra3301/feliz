@@ -1,0 +1,100 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.main-content {
+  flex: 1;
+  padding-top: 130px;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding-top: 90px;
+  }
+}
+
+.nugget-peek {
+  position: fixed;
+  right: 0;
+  top: 50%;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.nugget-image {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  animation: softBounce 3s ease-in-out infinite;
+  transform: translateX(50px) translateY(-50%);
+}
+
+@keyframes softBounce {
+  0%, 100% {
+    transform: translateX(50px) translateY(-50%) translateY(0);
+  }
+  50% {
+    transform: translateX(50px) translateY(-50%) translateY(-20px);
+  }
+}
+
+@media (max-width: 768px) {
+  .nugget-image {
+    width: 100px;
+    transform: translateX(30px) translateY(-50%);
+  }
+  
+  @keyframes softBounce {
+    0%, 100% {
+      transform: translateX(30px) translateY(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(30px) translateY(-50%) translateY(-15px);
+    }
+  }
+}
+
+.jew-peek {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  z-index: 100;
+  pointer-events: none;
+}
+
+.jew-image {
+  width: 150px;
+  height: auto;
+  object-fit: contain;
+  animation: peekAndHide 4s ease-in-out infinite;
+  transform: translateY(100px);
+}
+
+@keyframes peekAndHide {
+  0%, 100% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+  20% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  40% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  60% {
+    transform: translateY(100px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .jew-image {
+    width: 100px;
+  }
+}
+
