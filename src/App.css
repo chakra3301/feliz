@@ -21,7 +21,8 @@
   right: 0;
   top: 50%;
   z-index: 100;
-  pointer-events: none;
+  pointer-events: auto;
+  cursor: url('/cursor.png') 10 10, pointer;
 }
 
 .nugget-image {
@@ -41,6 +42,22 @@
   }
 }
 
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(50px) translateY(-50%) translateY(0) rotate(0deg);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(50px) translateY(-50%) translateY(0) rotate(-5deg);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(50px) translateY(-50%) translateY(0) rotate(5deg);
+  }
+}
+
+.nugget-image.shake {
+  animation: shake 0.5s ease-in-out !important;
+}
+
 @media (max-width: 768px) {
   .nugget-image {
     width: 100px;
@@ -55,6 +72,18 @@
       transform: translateX(30px) translateY(-50%) translateY(-15px);
     }
   }
+  
+  @keyframes shake {
+    0%, 100% {
+      transform: translateX(30px) translateY(-50%) translateY(0) rotate(0deg);
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(30px) translateY(-50%) translateY(0) rotate(-5deg);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(30px) translateY(-50%) translateY(0) rotate(5deg);
+    }
+  }
 }
 
 .jew-peek {
@@ -63,6 +92,9 @@
   bottom: 0;
   z-index: 100;
   pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
 .jew-image {
@@ -71,6 +103,54 @@
   object-fit: contain;
   animation: peekAndHide 4s ease-in-out infinite;
   transform: translateY(100px);
+}
+
+.speech-bubble {
+  position: relative;
+  background: white;
+  border: 2px solid var(--color-text);
+  border-radius: 20px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 0.5rem;
+  margin-left: 1rem;
+  animation: peekAndHide 4s ease-in-out infinite;
+  transform: translateY(100px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  max-width: 200px;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -12px;
+  left: 30px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 12px solid var(--color-text);
+}
+
+.speech-bubble::before {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 31px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 10px solid white;
+  z-index: 1;
+}
+
+.speech-bubble p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  font-weight: 500;
+  font-family: var(--font-title);
+  text-align: center;
 }
 
 @keyframes peekAndHide {
@@ -95,6 +175,17 @@
 @media (max-width: 768px) {
   .jew-image {
     width: 100px;
+  }
+  
+  .speech-bubble {
+    max-width: 150px;
+    padding: 0.5rem 0.75rem;
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .speech-bubble p {
+    font-size: 0.75rem;
   }
 }
 

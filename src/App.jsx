@@ -14,6 +14,40 @@ function App() {
   const [cart, setCart] = useState([])
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
+  const [isNuggetShaking, setIsNuggetShaking] = useState(false)
+
+  const playBurpSound = () => {
+    try {
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)()
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
+      
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      
+      // Create a burp-like sound with frequency modulation
+      oscillator.type = 'sawtooth'
+      oscillator.frequency.setValueAtTime(80, audioContext.currentTime)
+      oscillator.frequency.exponentialRampToValueAtTime(40, audioContext.currentTime + 0.1)
+      oscillator.frequency.exponentialRampToValueAtTime(60, audioContext.currentTime + 0.2)
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3)
+      
+      oscillator.start(audioContext.currentTime)
+      oscillator.stop(audioContext.currentTime + 0.3)
+    } catch (error) {
+      console.error('Error playing burp sound:', error)
+    }
+  }
+
+  const handleNuggetClick = () => {
+    setIsNuggetShaking(true)
+    playBurpSound()
+    setTimeout(() => {
+      setIsNuggetShaking(false)
+    }, 500)
+  }
 
   const addToCart = (product, size = null) => {
     const cartItem = {
@@ -103,11 +137,18 @@ function App() {
           onRemoveItem={removeFromCart}
         />
 
-        <div className="nugget-peek">
-          <img src={nuggetImage} alt="Nugget" className="nugget-image" />
+        <div className="nugget-peek" onClick={handleNuggetClick}>
+          <img 
+            src={nuggetImage} 
+            alt="Nugget" 
+            className={`nugget-image ${isNuggetShaking ? 'shake' : ''}`}
+          />
         </div>
 
         <div className="jew-peek">
+          <div className="speech-bubble">
+            <p>give me your sheckles</p>
+          </div>
           <img src={jewImage} alt="Jew" className="jew-image" />
         </div>
       </div>
