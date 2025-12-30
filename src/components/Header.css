@@ -27,7 +27,7 @@
   justify-content: flex-start;
 }
 
-.header-group-image {
+.header-three-image {
   height: 70px;
   width: auto;
   object-fit: contain;
@@ -54,7 +54,7 @@
   transition: opacity 0.2s;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: url('/cursor.png') 10 10, pointer;
   padding: 0.5rem 0;
   font-weight: 400;
   text-transform: none;
@@ -64,6 +64,7 @@
 
 .desktop-menu-item:hover {
   opacity: 0.7;
+  cursor: url('/cursor.png') 10 10, pointer;
 }
 
 .desktop-menu-item.active {
@@ -84,7 +85,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   transition: opacity 0.2s;
+}
+
+.logo-left-image {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
 }
 
 .logo:hover {
@@ -122,7 +130,7 @@
   background: var(--color-bg);
   color: var(--color-text);
   border-radius: 4px;
-  cursor: pointer;
+  cursor: url('/cursor.png') 10 10, pointer;
   transition: border-color 0.2s;
 }
 
@@ -135,6 +143,7 @@
   padding: 0.5rem;
   color: var(--color-text);
   transition: opacity 0.2s;
+  cursor: url('/cursor.png') 10 10, pointer;
 }
 
 .cart-button:hover {
@@ -239,7 +248,7 @@
   transition: opacity 0.2s;
   background: none;
   border: none;
-  cursor: pointer;
+  cursor: url('/cursor.png') 10 10, pointer;
   font-family: var(--font-title);
 }
 
@@ -260,8 +269,12 @@
     height: 32px;
   }
   
-  .header-group-image {
+  .header-three-image {
     height: 50px;
+  }
+  
+  .logo-left-image {
+    height: 28px;
   }
 }
 

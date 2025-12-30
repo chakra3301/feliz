@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import logoImage from '../../assets/feliz_.png'
 import groupImage from '../../assets/group1.png'
+import group1Image from '../../assets/Group 1.png'
+import threeImage from '../../assets/3.png'
 import './Header.css'
 
 const Header = ({ cartItemCount, onCartClick, selectedCategory, onCategorySelect }) => {
@@ -29,11 +31,12 @@ const Header = ({ cartItemCount, onCartClick, selectedCategory, onCategorySelect
     <header className="header">
       <div className="header-container">
         <div className="header-left">
-          <img src={groupImage} alt="Group" className="header-group-image" />
+          <img src={threeImage} alt="3" className="header-three-image" />
         </div>
         
         <div className="header-center">
           <Link to="/" className="logo" onClick={() => onCategorySelect(null)}>
+            <img src={group1Image} alt="Group 1" className="logo-left-image" />
             <img src={logoImage} alt="FELIZ" className="logo-image" />
           </Link>
           <nav className="desktop-nav">

@@ -1,5 +1,5 @@
 .product-card {
-  cursor: pointer;
+  cursor: url('/cursor.png') 10 10, pointer;
   transition: transform 0.3s ease, opacity 0.3s ease;
   position: relative;
 }

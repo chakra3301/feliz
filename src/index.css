@@ -25,6 +25,10 @@
   --font-title: 'CP Font', var(--font-sans);
 }
 
+html {
+  cursor: url('/cursor.png') 10 10, auto;
+}
+
 body {
   font-family: var(--font-sans);
   color: var(--color-text);
@@ -32,21 +36,22 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  cursor: url('/cursor.png'), auto;
+  cursor: url('/cursor.png') 10 10, auto;
 }
 
 * {
-  cursor: url('/cursor.png'), auto;
+  cursor: url('/cursor.png') 10 10, auto !important;
 }
 
 a {
   text-decoration: none;
   color: inherit;
+  cursor: url('/cursor.png') 10 10, pointer;
 }
 
 button {
   font-family: inherit;
-  cursor: pointer;
+  cursor: url('/cursor.png') 10 10, pointer !important;
   border: none;
   background: none;
 }
