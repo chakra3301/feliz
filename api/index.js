@@ -84,15 +84,21 @@ app.use('/api/products', productsRoutes);
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Error:', err);
-  res.status(500).json({ 
-    error: 'Internal server error',
+  // Ensure we always return JSON, not HTML
+  res.status(err.status || 500).json({ 
+    error: err.message || 'Internal server error',
+    status: err.status || 500,
     message: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// 404 handler
+// 404 handler - ensure JSON response
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route not found' });
+  res.status(404).json({ 
+    error: 'Route not found',
+    path: req.path,
+    method: req.method
+  });
 });
 
 // Export app for Vercel serverless functions

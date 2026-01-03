@@ -42,7 +42,20 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
       }
     } catch (err) {
       console.error('Checkout error:', err)
-      setError(err.message || 'Failed to start checkout. Please try again.')
+      // Provide user-friendly error messages
+      let errorMessage = 'Failed to start checkout. Please try again.'
+      
+      if (err.message.includes('500')) {
+        errorMessage = 'Server error. Please check that the API is configured correctly.'
+      } else if (err.message.includes('404')) {
+        errorMessage = 'API endpoint not found. Please check your API configuration.'
+      } else if (err.message.includes('CORS')) {
+        errorMessage = 'Connection error. Please check your API settings.'
+      } else if (err.message) {
+        errorMessage = err.message
+      }
+      
+      setError(errorMessage)
       setIsProcessing(false)
     }
   }

@@ -8,7 +8,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
  * @returns {Promise} Checkout session data
  */
 export async function createCheckoutSession(items) {
-  const response = await fetch(`${API_BASE_URL}/checkout/create-session`, {
+  const url = `${API_BASE_URL}/checkout/create-session`;
+  console.log('Creating checkout session:', { url, items, apiBaseUrl: API_BASE_URL });
+  
+  const response = await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -19,10 +22,24 @@ export async function createCheckoutSession(items) {
       cancelUrl: `${window.location.origin}/checkout/cancel`,
     }),
   });
+  
+  console.log('Checkout response:', { status: response.status, statusText: response.statusText, contentType: response.headers.get('content-type') });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to create checkout session');
+    // Check if response is JSON
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create checkout session');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to create checkout session`);
+      }
+    } else {
+      // Response is HTML or other non-JSON format
+      const text = await response.text();
+      throw new Error(`API Error (${response.status}): ${response.status === 500 ? 'Server error. Please check API configuration.' : 'Failed to create checkout session'}`);
+    }
   }
 
   return response.json();
@@ -38,7 +55,17 @@ export async function getOrders(params = {}) {
   const response = await fetch(`${API_BASE_URL}/orders${queryString ? `?${queryString}` : ''}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch orders');
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch orders');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to fetch orders`);
+      }
+    } else {
+      throw new Error(`API Error (${response.status}): Failed to fetch orders`);
+    }
   }
 
   return response.json();
@@ -53,7 +80,17 @@ export async function getOrder(orderId) {
   const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch order');
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch order');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to fetch order`);
+      }
+    } else {
+      throw new Error(`API Error (${response.status}): Failed to fetch order`);
+    }
   }
 
   return response.json();
@@ -75,7 +112,17 @@ export async function updateOrder(orderId, updates) {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to update order');
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update order');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to update order`);
+      }
+    } else {
+      throw new Error(`API Error (${response.status}): Failed to update order`);
+    }
   }
 
   return response.json();
@@ -90,7 +137,17 @@ export async function getLowStockItems(threshold = 10) {
   const response = await fetch(`${API_BASE_URL}/products/low-stock?threshold=${threshold}`);
 
   if (!response.ok) {
-    throw new Error('Failed to fetch low stock items');
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch low stock items');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to fetch low stock items`);
+      }
+    } else {
+      throw new Error(`API Error (${response.status}): Failed to fetch low stock items`);
+    }
   }
 
   return response.json();
