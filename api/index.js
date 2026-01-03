@@ -6,21 +6,11 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import checkoutRoutes from '../server/routes/checkout.js';
 import webhookRoutes from '../server/routes/webhooks.js';
-import ordersRoutes from '../server/routes/orders.js';
-import productsRoutes from '../server/routes/products.js';
-import { supabase } from '../server/config/supabase.js';
 import { rateLimiter } from '../server/middleware/rateLimiter.js';
 
 dotenv.config();
 
-// Validate required environment variables (don't exit in serverless)
-const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('⚠️  Missing required environment variables:', missingVars.join(', '));
-  // In serverless, we can't exit, but we'll log the error
-}
+// No database required - only Stripe is needed
 
 const app = express();
 
@@ -88,35 +78,17 @@ app.use('/api/webhooks', webhookRoutes);
 // Apply rate limiting to API routes (except webhooks)
 app.use('/api', rateLimiter(15 * 60 * 1000, 100));
 
-// Health check with database connectivity
-app.get('/health', async (req, res) => {
-  try {
-    const { error } = await supabase.from('products').select('id').limit(1);
-    if (error) {
-      return res.status(503).json({ 
-        status: 'unhealthy', 
-        database: 'disconnected',
-        timestamp: new Date().toISOString() 
-      });
-    }
-    res.json({ 
-      status: 'ok', 
-      database: 'connected',
-      timestamp: new Date().toISOString() 
-    });
-  } catch (err) {
-    res.status(503).json({ 
-      status: 'unhealthy', 
-      error: err.message,
-      timestamp: new Date().toISOString() 
-    });
-  }
+// Health check (no database needed)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    note: 'Stripe-only mode - no database required'
+  });
 });
 
 // API Routes
 app.use('/api/checkout', checkoutRoutes);
-app.use('/api/orders', ordersRoutes);
-app.use('/api/products', productsRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

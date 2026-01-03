@@ -16,14 +16,14 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
 
     try {
       // Map cart items to checkout format
-      // Use variantId from cart item (set when adding to cart)
+      // Use Stripe Price ID from cart item
       const items = cart.map(item => {
-        const variantId = item.variantId || item.product.variantId || item.product.id
-        if (!variantId) {
-          throw new Error(`No variant ID found for product ${item.product.name}`)
+        const priceId = item.priceId || item.product.priceId
+        if (!priceId) {
+          throw new Error(`No Stripe Price ID found for product ${item.product.name}. Please add priceId to product data.`)
         }
         return {
-          variantId: typeof variantId === 'number' ? variantId : parseInt(variantId),
+          priceId: priceId, // Stripe Price ID (e.g., 'price_1234567890')
           quantity: item.quantity
         }
       })

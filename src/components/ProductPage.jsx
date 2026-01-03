@@ -26,20 +26,20 @@ const ProductPage = ({ products, onAddToCart }) => {
       return
     }
     
-    // Find the variant ID for the selected size
-    let variantId = null
+    // Find the Stripe Price ID for the selected size
+    let priceId = null
     if (product.variants && selectedSize) {
       const variant = product.variants.find(v => v.size === selectedSize)
-      variantId = variant?.id
+      priceId = variant?.priceId
     } else if (product.variants && product.variants.length === 1) {
       // Only one variant, use it
-      variantId = product.variants[0].id
-    } else if (product.variantId) {
-      // Product already has a variantId
-      variantId = product.variantId
+      priceId = product.variants[0].priceId
+    } else if (product.priceId) {
+      // Product already has a priceId
+      priceId = product.priceId
     }
     
-    onAddToCart(product, selectedSize, variantId)
+    onAddToCart(product, selectedSize, priceId)
   }
 
   return (

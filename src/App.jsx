@@ -11,7 +11,6 @@ import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
 import NotFound from './pages/NotFound'
 import ErrorBoundary from './components/ErrorBoundary'
-import { getProducts } from './utils/api'
 import { products as fallbackProducts } from './data/products'
 import nuggetImage from '../assets/nugget.png'
 import jewImage from '../assets/jew.png'
@@ -51,57 +50,12 @@ function App() {
     }
   }
 
-  // Fetch products from API on mount
+  // Use hardcoded products with Stripe Price IDs
+  // No need to fetch from API - products are defined in frontend
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setIsLoadingProducts(true)
-        const apiProducts = await getProducts()
-        
-        // Transform API products to match frontend format
-        const transformedProducts = apiProducts.map(product => {
-          const variants = product.product_variants || []
-          const sizes = variants
-            .map(v => v.size)
-            .filter(Boolean)
-            .filter((size, index, self) => self.indexOf(size) === index) // unique sizes
-          
-          // Get the first variant's price (or calculate min/max)
-          const prices = variants.map(v => v.price / 100) // Convert cents to dollars
-          const minPrice = prices.length > 0 ? Math.min(...prices) : 0
-          
-          // Use first variant's image or fallback
-          const imageUrl = product.image_url || '/tshit.png'
-          
-          return {
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            price: minPrice,
-            image: imageUrl,
-            description: product.description,
-            sizes: sizes.length > 0 ? sizes : undefined,
-            variants: variants.map(v => ({
-              id: v.id,
-              size: v.size,
-              price: v.price / 100, // Convert cents to dollars
-              stockCount: v.stock_count,
-              sku: v.sku
-            }))
-          }
-        })
-        
-        setProducts(transformedProducts)
-      } catch (error) {
-        console.error('Error fetching products:', error)
-        // Use fallback products if API fails
-        setProducts(fallbackProducts)
-      } finally {
-        setIsLoadingProducts(false)
-      }
-    }
-    
-    fetchProducts()
+    setIsLoadingProducts(false)
+    // Products are already set from fallbackProducts
+    // Each product should have a priceId field with Stripe Price ID
   }, [])
 
   const handleNuggetClick = () => {
@@ -112,36 +66,44 @@ function App() {
     }, 500)
   }
 
-  const addToCart = (product, size = null, variantId = null) => {
-    // Find the variant ID if not provided
-    let selectedVariantId = variantId
-    if (!selectedVariantId && product.variants) {
+  const addToCart = (product, size = null, priceId = null) => {
+    // Find the Stripe Price ID
+    let selectedPriceId = priceId
+    
+    // If product has variants (sizes), find the price ID for the selected size
+    if (!selectedPriceId && product.variants) {
       if (size) {
         // Find variant by size
         const variant = product.variants.find(v => v.size === size)
-        selectedVariantId = variant?.id
+        selectedPriceId = variant?.priceId
       } else if (product.variants.length === 1) {
         // Only one variant, use it
-        selectedVariantId = product.variants[0].id
+        selectedPriceId = product.variants[0].priceId
       } else {
         // Use first variant as fallback
-        selectedVariantId = product.variants[0]?.id
+        selectedPriceId = product.variants[0]?.priceId
       }
     }
     
-    // Fallback to product.id if no variant found (for backward compatibility)
-    if (!selectedVariantId) {
-      selectedVariantId = product.id
+    // Fallback to product.priceId if no variant found
+    if (!selectedPriceId) {
+      selectedPriceId = product.priceId
+    }
+    
+    if (!selectedPriceId) {
+      console.error('No Stripe Price ID found for product:', product.name)
+      alert('Product configuration error: Missing Stripe Price ID. Please check product setup.')
+      return
     }
     
     const cartItem = {
-      id: `${product.id}-${size || selectedVariantId || 'default'}`,
+      id: `${product.id}-${size || selectedPriceId || 'default'}`,
       product: {
         ...product,
-        variantId: selectedVariantId
+        priceId: selectedPriceId
       },
       size,
-      variantId: selectedVariantId,
+      priceId: selectedPriceId,
       quantity: 1
     }
     
@@ -149,7 +111,7 @@ function App() {
       const existingItem = prevCart.find(item => 
         item.product.id === product.id && 
         item.size === size &&
-        item.variantId === selectedVariantId
+        item.priceId === selectedPriceId
       )
       
       if (existingItem) {

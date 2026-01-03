@@ -1,6 +1,5 @@
 import express from 'express';
 import { stripe, isStripeConfigured } from '../config/stripe.js';
-import { supabase } from '../config/supabase.js';
 
 const router = express.Router();
 
@@ -9,10 +8,12 @@ const router = express.Router();
  * POST /api/checkout/create-session
  * 
  * Body: {
- *   items: [{ productId, variantId, quantity }],
+ *   items: [{ priceId, quantity }],
  *   successUrl: string,
  *   cancelUrl: string
  * }
+ * 
+ * Note: priceId is the Stripe Price ID (e.g., 'price_1234567890')
  */
 router.post('/create-session', async (req, res) => {
   try {
@@ -30,98 +31,31 @@ router.post('/create-session', async (req, res) => {
       return res.status(400).json({ error: 'Items array is required' });
     }
 
-    // Validate variant IDs
-    const variantIds = items.map(item => item.variantId).filter(Boolean);
-    if (variantIds.length === 0) {
-      return res.status(400).json({ error: 'Valid variant IDs are required' });
-    }
-
-    console.log('Fetching variants:', variantIds);
-
-    // Fetch product variants from database to get current prices and stock
-    const { data: variants, error: variantsError } = await supabase
-      .from('product_variants')
-      .select('*, products(*)')
-      .in('id', variantIds);
-
-    if (variantsError) {
-      console.error('Error fetching variants:', variantsError);
-      return res.status(500).json({ 
-        error: 'Failed to fetch product variants',
-        details: variantsError.message,
-        hint: 'Check that product_variants and products tables exist in your database'
+    // Validate price IDs
+    const priceIds = items.map(item => item.priceId).filter(Boolean);
+    if (priceIds.length === 0) {
+      return res.status(400).json({ 
+        error: 'Valid Stripe Price IDs are required',
+        hint: 'Each item must have a priceId field (e.g., "price_1234567890")'
       });
     }
 
-    if (!variants || variants.length === 0) {
-      return res.status(404).json({ 
-        error: 'No variants found',
-        requestedIds: variantIds
-      });
-    }
+    console.log('Creating checkout session with items:', items);
 
-    // Build line items for Stripe
-    const lineItems = [];
+    // Build line items for Stripe using Price IDs
+    const lineItems = items.map(item => ({
+      price: item.priceId, // Stripe Price ID
+      quantity: item.quantity || 1
+    }));
+
+    // Create metadata from items (optional, for tracking)
     const metadata = {
-      orderItems: JSON.stringify([])
+      itemCount: items.length.toString(),
+      items: JSON.stringify(items.map(item => ({
+        priceId: item.priceId,
+        quantity: item.quantity
+      })))
     };
-
-    for (const item of items) {
-      const variant = variants.find(v => v.id === item.variantId);
-      
-      if (!variant) {
-        return res.status(400).json({ error: `Variant ${item.variantId} not found` });
-      }
-
-      // Check if product data exists
-      if (!variant.products) {
-        console.error('Variant missing product data:', variant);
-        return res.status(500).json({ 
-          error: `Product data missing for variant ${item.variantId}`,
-          hint: 'Check that the products table exists and has a relationship with product_variants'
-        });
-      }
-
-      // Check stock availability
-      if (variant.stock_count < item.quantity) {
-        return res.status(400).json({ 
-          error: `Insufficient stock for ${variant.products.name} (${variant.size || 'N/A'}). Available: ${variant.stock_count}` 
-        });
-      }
-
-      // Add to line items
-      lineItems.push({
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `${variant.products.name}${variant.size ? ` - ${variant.size}` : ''}`,
-            description: variant.products.description || '',
-            metadata: {
-              productId: variant.product_id.toString(),
-              variantId: variant.id.toString(),
-              sku: variant.sku,
-              size: variant.size || ''
-            }
-          },
-          unit_amount: variant.price, // Price in cents
-        },
-        quantity: item.quantity,
-      });
-
-      // Store order item metadata
-      metadata.orderItems = JSON.stringify([
-        ...JSON.parse(metadata.orderItems),
-        {
-          productId: variant.product_id,
-          variantId: variant.id,
-          productName: variant.products.name,
-          size: variant.size,
-          sku: variant.sku,
-          quantity: item.quantity,
-          price: variant.price
-        }
-      ]);
-    }
 
     // Create Stripe Checkout Session
     console.log('Creating Stripe checkout session with', lineItems.length, 'items');
@@ -153,7 +87,7 @@ router.post('/create-session', async (req, res) => {
         error: 'Failed to create Stripe checkout session',
         message: stripeError.message,
         type: stripeError.type,
-        hint: 'Check your Stripe API key and account status'
+        hint: 'Check your Stripe API key and that the Price IDs are valid'
       });
     }
 
