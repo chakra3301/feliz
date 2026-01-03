@@ -1,6 +1,22 @@
 // API utility functions for communicating with backend
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Get API base URL from environment or default to localhost
+let API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+
+// Fix relative URLs - if it starts with /, use current origin
+if (typeof window !== 'undefined' && API_BASE_URL.startsWith('/')) {
+  API_BASE_URL = `${window.location.origin}${API_BASE_URL}`;
+}
+
+// Ensure it doesn't end with /api/api (double /api)
+if (API_BASE_URL.endsWith('/api/api')) {
+  API_BASE_URL = API_BASE_URL.replace(/\/api\/api$/, '/api');
+}
+
+// Log for debugging (only in browser)
+if (typeof window !== 'undefined') {
+  console.log('API Base URL configured:', API_BASE_URL);
+}
 
 /**
  * Create Stripe checkout session
