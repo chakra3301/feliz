@@ -16,13 +16,17 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
 
     try {
       // Map cart items to checkout format
-      // Note: In production, you'd need to map product IDs to variant IDs
-      // For now, we'll use a simplified approach where variantId = productId
-      // You'll need to update this based on your actual product/variant structure
-      const items = cart.map(item => ({
-        variantId: item.product.variantId || item.product.id, // Use variantId if available
-        quantity: item.quantity
-      }))
+      // Use variantId from cart item (set when adding to cart)
+      const items = cart.map(item => {
+        const variantId = item.variantId || item.product.variantId || item.product.id
+        if (!variantId) {
+          throw new Error(`No variant ID found for product ${item.product.name}`)
+        }
+        return {
+          variantId: typeof variantId === 'number' ? variantId : parseInt(variantId),
+          quantity: item.quantity
+        }
+      })
 
       // Create Stripe checkout session
       const response = await createCheckoutSession(items)

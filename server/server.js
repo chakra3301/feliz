@@ -28,18 +28,53 @@ const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
   : ['http://localhost:5173'];
 
+// Helper function to normalize URLs (handle www/non-www)
+function normalizeOrigin(origin) {
+  if (!origin) return null;
+  // Remove www. prefix for comparison
+  return origin.replace(/^https?:\/\/(www\.)?/, '');
+}
+
+// Expand allowed origins to include both www and non-www versions
+const expandedOrigins = new Set();
+allowedOrigins.forEach(url => {
+  expandedOrigins.add(url);
+  // Add www version if not present
+  if (url.includes('://') && !url.includes('://www.')) {
+    expandedOrigins.add(url.replace(/^(https?:\/\/)(.+)$/, '$1www.$2'));
+  }
+  // Add non-www version if www is present
+  if (url.includes('://www.')) {
+    expandedOrigins.add(url.replace(/^(https?:\/\/)www\.(.+)$/, '$1$2'));
+  }
+});
+
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    // Check exact match first
+    if (expandedOrigins.has(origin)) {
+      return callback(null, true);
+    }
+    
+    // Check normalized match (www/non-www)
+    const normalizedOrigin = normalizeOrigin(origin);
+    const isAllowed = Array.from(expandedOrigins).some(allowed => {
+      return normalizeOrigin(allowed) === normalizedOrigin;
+    });
+    
+    if (isAllowed || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
+      console.warn('CORS blocked origin:', origin, 'Allowed origins:', Array.from(expandedOrigins));
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parser with size limits

@@ -8,6 +8,21 @@ if (typeof window !== 'undefined' && API_BASE_URL.startsWith('/')) {
   API_BASE_URL = `${window.location.origin}${API_BASE_URL}`;
 }
 
+// Ensure API URL matches current domain (www/non-www)
+if (typeof window !== 'undefined' && API_BASE_URL.includes('://')) {
+  const currentOrigin = window.location.origin;
+  const apiUrl = new URL(API_BASE_URL);
+  
+  // If domains match (ignoring www), use current origin
+  const currentHost = currentOrigin.replace(/^https?:\/\/(www\.)?/, '');
+  const apiHost = apiUrl.origin.replace(/^https?:\/\/(www\.)?/, '');
+  
+  if (currentHost === apiHost) {
+    // Use the same www/non-www as current page
+    API_BASE_URL = `${currentOrigin}${apiUrl.pathname}`;
+  }
+}
+
 // Ensure it doesn't end with /api/api (double /api)
 if (API_BASE_URL.endsWith('/api/api')) {
   API_BASE_URL = API_BASE_URL.replace(/\/api\/api$/, '/api');
@@ -16,6 +31,7 @@ if (API_BASE_URL.endsWith('/api/api')) {
 // Log for debugging (only in browser)
 if (typeof window !== 'undefined') {
   console.log('API Base URL configured:', API_BASE_URL);
+  console.log('Current origin:', window.location.origin);
 }
 
 /**
@@ -138,6 +154,35 @@ export async function updateOrder(orderId, updates) {
       }
     } else {
       throw new Error(`API Error (${response.status}): Failed to update order`);
+    }
+  }
+
+  return response.json();
+}
+
+/**
+ * Get all products with variants
+ * @param {string} category - Optional category filter
+ * @returns {Promise} Products array with variants
+ */
+export async function getProducts(category = null) {
+  const url = category 
+    ? `${API_BASE_URL}/products?category=${encodeURIComponent(category)}`
+    : `${API_BASE_URL}/products`;
+  
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      try {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch products');
+      } catch (e) {
+        throw new Error(`API Error (${response.status}): Failed to fetch products`);
+      }
+    } else {
+      throw new Error(`API Error (${response.status}): Failed to fetch products`);
     }
   }
 

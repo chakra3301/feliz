@@ -25,7 +25,21 @@ const ProductPage = ({ products, onAddToCart }) => {
       alert('Please select a size')
       return
     }
-    onAddToCart(product, selectedSize)
+    
+    // Find the variant ID for the selected size
+    let variantId = null
+    if (product.variants && selectedSize) {
+      const variant = product.variants.find(v => v.size === selectedSize)
+      variantId = variant?.id
+    } else if (product.variants && product.variants.length === 1) {
+      // Only one variant, use it
+      variantId = product.variants[0].id
+    } else if (product.variantId) {
+      // Product already has a variantId
+      variantId = product.variantId
+    }
+    
+    onAddToCart(product, selectedSize, variantId)
   }
 
   return (

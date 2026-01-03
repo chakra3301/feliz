@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Header from './components/Header'
 import ProductGrid from './components/ProductGrid'
@@ -11,7 +11,8 @@ import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
 import NotFound from './pages/NotFound'
 import ErrorBoundary from './components/ErrorBoundary'
-import { products } from './data/products'
+import { getProducts } from './utils/api'
+import { products as fallbackProducts } from './data/products'
 import nuggetImage from '../assets/nugget.png'
 import jewImage from '../assets/jew.png'
 import './App.css'
@@ -22,6 +23,8 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [isNuggetShaking, setIsNuggetShaking] = useState(false)
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
+  const [products, setProducts] = useState(fallbackProducts)
+  const [isLoadingProducts, setIsLoadingProducts] = useState(true)
 
   const playBurpSound = () => {
     try {
@@ -48,6 +51,59 @@ function App() {
     }
   }
 
+  // Fetch products from API on mount
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setIsLoadingProducts(true)
+        const apiProducts = await getProducts()
+        
+        // Transform API products to match frontend format
+        const transformedProducts = apiProducts.map(product => {
+          const variants = product.product_variants || []
+          const sizes = variants
+            .map(v => v.size)
+            .filter(Boolean)
+            .filter((size, index, self) => self.indexOf(size) === index) // unique sizes
+          
+          // Get the first variant's price (or calculate min/max)
+          const prices = variants.map(v => v.price / 100) // Convert cents to dollars
+          const minPrice = prices.length > 0 ? Math.min(...prices) : 0
+          
+          // Use first variant's image or fallback
+          const imageUrl = product.image_url || '/tshit.png'
+          
+          return {
+            id: product.id,
+            name: product.name,
+            category: product.category,
+            price: minPrice,
+            image: imageUrl,
+            description: product.description,
+            sizes: sizes.length > 0 ? sizes : undefined,
+            variants: variants.map(v => ({
+              id: v.id,
+              size: v.size,
+              price: v.price / 100, // Convert cents to dollars
+              stockCount: v.stock_count,
+              sku: v.sku
+            }))
+          }
+        })
+        
+        setProducts(transformedProducts)
+      } catch (error) {
+        console.error('Error fetching products:', error)
+        // Use fallback products if API fails
+        setProducts(fallbackProducts)
+      } finally {
+        setIsLoadingProducts(false)
+      }
+    }
+    
+    fetchProducts()
+  }, [])
+
   const handleNuggetClick = () => {
     setIsNuggetShaking(true)
     playBurpSound()
@@ -56,17 +112,44 @@ function App() {
     }, 500)
   }
 
-  const addToCart = (product, size = null) => {
+  const addToCart = (product, size = null, variantId = null) => {
+    // Find the variant ID if not provided
+    let selectedVariantId = variantId
+    if (!selectedVariantId && product.variants) {
+      if (size) {
+        // Find variant by size
+        const variant = product.variants.find(v => v.size === size)
+        selectedVariantId = variant?.id
+      } else if (product.variants.length === 1) {
+        // Only one variant, use it
+        selectedVariantId = product.variants[0].id
+      } else {
+        // Use first variant as fallback
+        selectedVariantId = product.variants[0]?.id
+      }
+    }
+    
+    // Fallback to product.id if no variant found (for backward compatibility)
+    if (!selectedVariantId) {
+      selectedVariantId = product.id
+    }
+    
     const cartItem = {
-      id: `${product.id}-${size || 'default'}`,
-      product,
+      id: `${product.id}-${size || selectedVariantId || 'default'}`,
+      product: {
+        ...product,
+        variantId: selectedVariantId
+      },
       size,
+      variantId: selectedVariantId,
       quantity: 1
     }
     
     setCart(prevCart => {
       const existingItem = prevCart.find(item => 
-        item.product.id === product.id && item.size === size
+        item.product.id === product.id && 
+        item.size === size &&
+        item.variantId === selectedVariantId
       )
       
       if (existingItem) {
@@ -112,49 +195,55 @@ function App() {
           />
           
           <main className="main-content">
-            <Routes>
-              <Route 
-                path="/" 
-                element={
-                  <ProductGrid 
-                    products={products}
-                    selectedCategory={selectedCategory}
-                    onAddToCart={addToCart}
-                  />
-                } 
-              />
-              <Route 
-                path="/product/:id" 
-                element={
-                  <ProductPage 
-                    products={products}
-                    onAddToCart={addToCart}
-                  />
-                } 
-              />
-              <Route 
-                path="/admin" 
-                element={
-                  isAdminLoggedIn ? (
-                    <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
-                  ) : (
-                    <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
-                  )
-                } 
-              />
-              <Route 
-                path="/checkout/success" 
-                element={<CheckoutSuccess />} 
-              />
-              <Route 
-                path="/checkout/cancel" 
-                element={<CheckoutCancel />} 
-              />
-              <Route 
-                path="*" 
-                element={<NotFound />} 
-              />
-            </Routes>
+            {isLoadingProducts ? (
+              <div style={{ padding: '2rem', textAlign: 'center' }}>
+                <p>Loading products...</p>
+              </div>
+            ) : (
+              <Routes>
+                <Route 
+                  path="/" 
+                  element={
+                    <ProductGrid 
+                      products={products}
+                      selectedCategory={selectedCategory}
+                      onAddToCart={addToCart}
+                    />
+                  } 
+                />
+                <Route 
+                  path="/product/:id" 
+                  element={
+                    <ProductPage 
+                      products={products}
+                      onAddToCart={addToCart}
+                    />
+                  } 
+                />
+                <Route 
+                  path="/admin" 
+                  element={
+                    isAdminLoggedIn ? (
+                      <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
+                    ) : (
+                      <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/checkout/success" 
+                  element={<CheckoutSuccess />} 
+                />
+                <Route 
+                  path="/checkout/cancel" 
+                  element={<CheckoutCancel />} 
+                />
+                <Route 
+                  path="*" 
+                  element={<NotFound />} 
+                />
+              </Routes>
+            )}
           </main>
 
         <Footer />

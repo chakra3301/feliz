@@ -30,8 +30,15 @@ router.post('/create-session', async (req, res) => {
       return res.status(400).json({ error: 'Items array is required' });
     }
 
+    // Validate variant IDs
+    const variantIds = items.map(item => item.variantId).filter(Boolean);
+    if (variantIds.length === 0) {
+      return res.status(400).json({ error: 'Valid variant IDs are required' });
+    }
+
+    console.log('Fetching variants:', variantIds);
+
     // Fetch product variants from database to get current prices and stock
-    const variantIds = items.map(item => item.variantId);
     const { data: variants, error: variantsError } = await supabase
       .from('product_variants')
       .select('*, products(*)')
@@ -39,7 +46,18 @@ router.post('/create-session', async (req, res) => {
 
     if (variantsError) {
       console.error('Error fetching variants:', variantsError);
-      return res.status(500).json({ error: 'Failed to fetch product variants' });
+      return res.status(500).json({ 
+        error: 'Failed to fetch product variants',
+        details: variantsError.message,
+        hint: 'Check that product_variants and products tables exist in your database'
+      });
+    }
+
+    if (!variants || variants.length === 0) {
+      return res.status(404).json({ 
+        error: 'No variants found',
+        requestedIds: variantIds
+      });
     }
 
     // Build line items for Stripe
@@ -53,6 +71,15 @@ router.post('/create-session', async (req, res) => {
       
       if (!variant) {
         return res.status(400).json({ error: `Variant ${item.variantId} not found` });
+      }
+
+      // Check if product data exists
+      if (!variant.products) {
+        console.error('Variant missing product data:', variant);
+        return res.status(500).json({ 
+          error: `Product data missing for variant ${item.variantId}`,
+          hint: 'Check that the products table exists and has a relationship with product_variants'
+        });
       }
 
       // Check stock availability
@@ -97,30 +124,46 @@ router.post('/create-session', async (req, res) => {
     }
 
     // Create Stripe Checkout Session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: lineItems,
-      mode: 'payment',
-      success_url: successUrl || `${process.env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/checkout/cancel`,
-      shipping_address_collection: {
-        allowed_countries: ['US', 'CA'], // Add more countries as needed
-      },
-      metadata: metadata,
-      // Enable automatic tax calculation if needed
-      // automatic_tax: { enabled: true },
-    });
+    console.log('Creating Stripe checkout session with', lineItems.length, 'items');
+    
+    try {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: lineItems,
+        mode: 'payment',
+        success_url: successUrl || `${process.env.FRONTEND_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: cancelUrl || `${process.env.FRONTEND_URL}/checkout/cancel`,
+        shipping_address_collection: {
+          allowed_countries: ['US', 'CA'], // Add more countries as needed
+        },
+        metadata: metadata,
+        // Enable automatic tax calculation if needed
+        // automatic_tax: { enabled: true },
+      });
 
-    res.json({ 
-      sessionId: session.id,
-      url: session.url 
-    });
+      console.log('Stripe session created:', session.id);
+
+      res.json({ 
+        sessionId: session.id,
+        url: session.url 
+      });
+    } catch (stripeError) {
+      console.error('Stripe API error:', stripeError);
+      return res.status(500).json({ 
+        error: 'Failed to create Stripe checkout session',
+        message: stripeError.message,
+        type: stripeError.type,
+        hint: 'Check your Stripe API key and account status'
+      });
+    }
 
   } catch (error) {
     console.error('Error creating checkout session:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       error: 'Failed to create checkout session',
-      message: error.message 
+      message: error.message,
+      hint: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
