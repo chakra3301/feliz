@@ -19,6 +19,7 @@ const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
   console.error('⚠️  Missing required environment variables:', missingVars.join(', '));
+  // In serverless, we can't exit, but we'll log the error
 }
 
 const app = express();
