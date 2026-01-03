@@ -7,7 +7,7 @@ const ProductPage = ({ products, onAddToCart }) => {
   const navigate = useNavigate()
   const [selectedSize, setSelectedSize] = useState(null)
   
-  const product = products.find(p => p.id === parseInt(id))
+  const product = products.find(p => p.id === parseInt(id) || p.id === id || p.handle === id)
 
   if (!product) {
     return (
@@ -26,38 +26,32 @@ const ProductPage = ({ products, onAddToCart }) => {
       return
     }
     
-    // Find the Stripe Price ID for the selected size
-    let priceId = null
-    if (product.variants && selectedSize) {
-      const variant = product.variants.find(v => v.size === selectedSize)
-      priceId = variant?.priceId
-    } else if (product.variants && product.variants.length === 1) {
-      // Only one variant, use it
-      priceId = product.variants[0].priceId
-    } else if (product.priceId) {
-      // Product already has a priceId
-      priceId = product.priceId
-    }
-    
-    onAddToCart(product, selectedSize, priceId)
+    onAddToCart(product, selectedSize)
+  }
+
+  // Check if selected size is available
+  const isSelectedSizeAvailable = () => {
+    if (!product.variants || !selectedSize) return true
+    const variant = product.variants.find(v => v.size === selectedSize)
+    return variant?.available !== false
   }
 
   return (
     <div className="product-page">
       <div className="page-title">
-        <h1>{product.name}</h1>
+        <h1>{product.name || product.title}</h1>
       </div>
       <div className="product-page-container">
         <div className="product-image-section">
           <img 
             src={product.image} 
-            alt={product.name}
+            alt={product.name || product.title}
             className="product-hero-image"
           />
         </div>
         
         <div className="product-details-section">
-          <h1 className="product-page-name">{product.name}</h1>
+          <h1 className="product-page-name">{product.name || product.title}</h1>
           <p className="product-page-price">${product.price}</p>
           
           {product.description && (
@@ -68,15 +62,21 @@ const ProductPage = ({ products, onAddToCart }) => {
             <div className="size-selector">
               <label className="size-label">Size</label>
               <div className="size-options">
-                {product.sizes.map(size => (
-                  <button
-                    key={size}
-                    className={`size-option ${selectedSize === size ? 'selected' : ''}`}
-                    onClick={() => setSelectedSize(size)}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {product.sizes.map(size => {
+                  const variant = product.variants?.find(v => v.size === size)
+                  const isAvailable = variant?.available !== false
+                  
+                  return (
+                    <button
+                      key={size}
+                      className={`size-option ${selectedSize === size ? 'selected' : ''} ${!isAvailable ? 'sold-out' : ''}`}
+                      onClick={() => isAvailable && setSelectedSize(size)}
+                      disabled={!isAvailable}
+                    >
+                      {size}
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -84,8 +84,9 @@ const ProductPage = ({ products, onAddToCart }) => {
           <button 
             className="add-to-cart-cta"
             onClick={handleAddToCart}
+            disabled={!isSelectedSizeAvailable()}
           >
-            Add to Cart
+            {isSelectedSizeAvailable() ? 'Add to Cart' : 'Sold Out'}
           </button>
         </div>
       </div>
@@ -94,4 +95,3 @@ const ProductPage = ({ products, onAddToCart }) => {
 }
 
 export default ProductPage
-

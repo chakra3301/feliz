@@ -284,18 +284,34 @@
 @media (max-width: 768px) {
   .header-container {
     padding: 1rem 1.5rem;
+    grid-template-columns: auto 1fr auto;
   }
   
   .logo-image {
     height: 32px;
   }
   
+  /* Hide left and right images on mobile, keep only logo */
+  .header-left {
+    display: none;
+  }
+  
   .header-left-image {
-    height: 100px;
+    display: none;
   }
   
   .header-right-image {
-    height: 100px;
+    display: none;
+  }
+  
+  .header-right-image-container {
+    position: static;
+  }
+  
+  .header-right-overlay {
+    position: static;
+    transform: none;
+    padding-right: 0;
   }
 }
 

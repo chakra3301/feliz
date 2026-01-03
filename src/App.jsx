@@ -5,13 +5,12 @@ import ProductGrid from './components/ProductGrid'
 import ProductPage from './components/ProductPage'
 import Cart from './components/Cart'
 import Footer from './components/Footer'
-import AdminLogin from './components/AdminLogin'
-import AdminDashboard from './components/AdminDashboard'
 import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
 import NotFound from './pages/NotFound'
 import ErrorBoundary from './components/ErrorBoundary'
 import { products as fallbackProducts } from './data/products'
+import { getProducts, addToCart as shopifyAddToCart } from './lib/shopify'
 import nuggetImage from '../assets/nugget.png'
 import jewImage from '../assets/jew.png'
 import './App.css'
@@ -21,9 +20,9 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [isNuggetShaking, setIsNuggetShaking] = useState(false)
-  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
   const [products, setProducts] = useState(fallbackProducts)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
+  const [shopifyEnabled, setShopifyEnabled] = useState(false)
 
   const playBurpSound = () => {
     try {
@@ -50,12 +49,25 @@ function App() {
     }
   }
 
-  // Use hardcoded products with Stripe Price IDs
-  // No need to fetch from API - products are defined in frontend
+  // Try to fetch products from Shopify, fall back to local products
   useEffect(() => {
-    setIsLoadingProducts(false)
-    // Products are already set from fallbackProducts
-    // Each product should have a priceId field with Stripe Price ID
+    async function fetchProducts() {
+      try {
+        const shopifyProducts = await getProducts()
+        if (shopifyProducts && shopifyProducts.length > 0) {
+          setProducts(shopifyProducts)
+          setShopifyEnabled(true)
+          console.log('✅ Loaded products from Shopify')
+        } else {
+          console.log('ℹ️ Using fallback products (Shopify returned no products)')
+        }
+      } catch (error) {
+        console.log('ℹ️ Using fallback products (Shopify not configured)')
+      } finally {
+        setIsLoadingProducts(false)
+      }
+    }
+    fetchProducts()
   }, [])
 
   const handleNuggetClick = () => {
@@ -66,52 +78,44 @@ function App() {
     }, 500)
   }
 
-  const addToCart = (product, size = null, priceId = null) => {
-    // Find the Stripe Price ID
-    let selectedPriceId = priceId
+  const addToCart = async (product, size = null) => {
+    // Find the variant ID for the selected size
+    let variantId = null
     
-    // If product has variants (sizes), find the price ID for the selected size
-    if (!selectedPriceId && product.variants) {
+    if (product.variants && product.variants.length > 0) {
       if (size) {
-        // Find variant by size
         const variant = product.variants.find(v => v.size === size)
-        selectedPriceId = variant?.priceId
-      } else if (product.variants.length === 1) {
-        // Only one variant, use it
-        selectedPriceId = product.variants[0].priceId
+        variantId = variant?.id
       } else {
-        // Use first variant as fallback
-        selectedPriceId = product.variants[0]?.priceId
+        variantId = product.variants[0]?.id
       }
     }
     
-    // Fallback to product.priceId if no variant found
-    if (!selectedPriceId) {
-      selectedPriceId = product.priceId
+    // Add to Shopify cart if enabled
+    if (shopifyEnabled && variantId) {
+      try {
+        await shopifyAddToCart(variantId, 1)
+        console.log('✅ Added to Shopify cart')
+      } catch (error) {
+        console.error('Failed to add to Shopify cart:', error)
+      }
     }
     
-    if (!selectedPriceId) {
-      console.error('No Stripe Price ID found for product:', product.name)
-      alert('Product configuration error: Missing Stripe Price ID. Please check product setup.')
-      return
-    }
-    
+    // Also update local cart state for UI
     const cartItem = {
-      id: `${product.id}-${size || selectedPriceId || 'default'}`,
+      id: `${product.id}-${size || 'default'}`,
       product: {
-        ...product,
-        priceId: selectedPriceId
+        ...product
       },
       size,
-      priceId: selectedPriceId,
+      variantId,
       quantity: 1
     }
     
     setCart(prevCart => {
       const existingItem = prevCart.find(item => 
         item.product.id === product.id && 
-        item.size === size &&
-        item.priceId === selectedPriceId
+        item.size === size
       )
       
       if (existingItem) {
@@ -183,16 +187,6 @@ function App() {
                   } 
                 />
                 <Route 
-                  path="/admin" 
-                  element={
-                    isAdminLoggedIn ? (
-                      <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
-                    ) : (
-                      <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
-                    )
-                  } 
-                />
-                <Route 
                   path="/checkout/success" 
                   element={<CheckoutSuccess />} 
                 />
@@ -239,4 +233,3 @@ function App() {
 }
 
 export default App
-

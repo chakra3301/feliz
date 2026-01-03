@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createCheckoutSession } from '../utils/api'
+import { redirectToCheckout } from '../lib/shopify'
 import './Cart.css'
 
 const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
@@ -15,46 +15,17 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
     setError(null)
 
     try {
-      // Map cart items to checkout format
-      // Use Stripe Price ID from cart item
-      const items = cart.map(item => {
-        const priceId = item.priceId || item.product.priceId
-        if (!priceId) {
-          throw new Error(`No Stripe Price ID found for product ${item.product.name}. Please add priceId to product data.`)
-        }
-        return {
-          priceId: priceId, // Stripe Price ID (e.g., 'price_1234567890')
-          quantity: item.quantity
-        }
-      })
-
-      // Create Stripe checkout session
-      const response = await createCheckoutSession(items)
-
-      // Check if Stripe is not configured
-      if (response.error && !response.stripeConfigured) {
-        setError('Payment processing is not yet configured. Please contact support.')
-        setIsProcessing(false)
-        return
-      }
-
-      // Redirect to Stripe Checkout
-      if (response.url) {
-        window.location.href = response.url
-      } else {
-        throw new Error('No checkout URL received')
-      }
+      // Redirect to Shopify checkout
+      await redirectToCheckout()
     } catch (err) {
       console.error('Checkout error:', err)
-      // Provide user-friendly error messages
+      
       let errorMessage = 'Failed to start checkout. Please try again.'
       
-      if (err.message.includes('500')) {
-        errorMessage = 'Server error. Please check that the API is configured correctly.'
-      } else if (err.message.includes('404')) {
-        errorMessage = 'API endpoint not found. Please check your API configuration.'
-      } else if (err.message.includes('CORS')) {
-        errorMessage = 'Connection error. Please check your API settings.'
+      if (err.message.includes('No cart')) {
+        errorMessage = 'Your cart is empty. Please add items first.'
+      } else if (err.message.includes('credentials')) {
+        errorMessage = 'Store configuration error. Please contact support.'
       } else if (err.message) {
         errorMessage = err.message
       }
@@ -141,7 +112,7 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
               onClick={handleCheckout}
               disabled={isProcessing}
             >
-              {isProcessing ? 'Processing...' : 'Checkout with Stripe'}
+              {isProcessing ? 'Processing...' : 'Checkout'}
             </button>
           </div>
         )}
@@ -151,4 +122,3 @@ const Cart = ({ isOpen, onClose, cart, onUpdateQuantity, onRemoveItem }) => {
 }
 
 export default Cart
-
