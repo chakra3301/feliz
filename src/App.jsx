@@ -9,6 +9,8 @@ import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import CheckoutSuccess from './pages/CheckoutSuccess'
 import CheckoutCancel from './pages/CheckoutCancel'
+import NotFound from './pages/NotFound'
+import ErrorBoundary from './components/ErrorBoundary'
 import { products } from './data/products'
 import nuggetImage from '../assets/nugget.png'
 import jewImage from '../assets/jew.png'
@@ -99,56 +101,61 @@ function App() {
   const cartItemCount = cart.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
-    <Router>
-      <div className="app">
-        <Header 
-          cartItemCount={cartItemCount}
-          onCartClick={() => setIsCartOpen(true)}
-          selectedCategory={selectedCategory}
-          onCategorySelect={setSelectedCategory}
-        />
-        
-        <main className="main-content">
-          <Routes>
-            <Route 
-              path="/" 
-              element={
-                <ProductGrid 
-                  products={products}
-                  selectedCategory={selectedCategory}
-                  onAddToCart={addToCart}
-                />
-              } 
-            />
-            <Route 
-              path="/product/:id" 
-              element={
-                <ProductPage 
-                  products={products}
-                  onAddToCart={addToCart}
-                />
-              } 
-            />
-            <Route 
-              path="/admin" 
-              element={
-                isAdminLoggedIn ? (
-                  <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
-                ) : (
-                  <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
-                )
-              } 
-            />
-            <Route 
-              path="/checkout/success" 
-              element={<CheckoutSuccess />} 
-            />
-            <Route 
-              path="/checkout/cancel" 
-              element={<CheckoutCancel />} 
-            />
-          </Routes>
-        </main>
+    <ErrorBoundary>
+      <Router>
+        <div className="app">
+          <Header 
+            cartItemCount={cartItemCount}
+            onCartClick={() => setIsCartOpen(true)}
+            selectedCategory={selectedCategory}
+            onCategorySelect={setSelectedCategory}
+          />
+          
+          <main className="main-content">
+            <Routes>
+              <Route 
+                path="/" 
+                element={
+                  <ProductGrid 
+                    products={products}
+                    selectedCategory={selectedCategory}
+                    onAddToCart={addToCart}
+                  />
+                } 
+              />
+              <Route 
+                path="/product/:id" 
+                element={
+                  <ProductPage 
+                    products={products}
+                    onAddToCart={addToCart}
+                  />
+                } 
+              />
+              <Route 
+                path="/admin" 
+                element={
+                  isAdminLoggedIn ? (
+                    <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
+                  ) : (
+                    <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
+                  )
+                } 
+              />
+              <Route 
+                path="/checkout/success" 
+                element={<CheckoutSuccess />} 
+              />
+              <Route 
+                path="/checkout/cancel" 
+                element={<CheckoutCancel />} 
+              />
+              <Route 
+                path="*" 
+                element={<NotFound />} 
+              />
+            </Routes>
+          </main>
 
         <Footer />
 

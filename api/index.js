@@ -1,27 +1,27 @@
+// Vercel serverless function entry point
+// This exports the Express app for Vercel's serverless environment
+
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import checkoutRoutes from './routes/checkout.js';
-import webhookRoutes from './routes/webhooks.js';
-import ordersRoutes from './routes/orders.js';
-import productsRoutes from './routes/products.js';
-import { supabase } from './config/supabase.js';
-import { rateLimiter } from './middleware/rateLimiter.js';
+import checkoutRoutes from '../server/routes/checkout.js';
+import webhookRoutes from '../server/routes/webhooks.js';
+import ordersRoutes from '../server/routes/orders.js';
+import productsRoutes from '../server/routes/products.js';
+import { supabase } from '../server/config/supabase.js';
+import { rateLimiter } from '../server/middleware/rateLimiter.js';
 
 dotenv.config();
 
-// Validate required environment variables
+// Validate required environment variables (don't exit in serverless)
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
 const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars.join(', '));
-  console.error('Please check your .env file');
-  process.exit(1);
+  console.error('⚠️  Missing required environment variables:', missingVars.join(', '));
 }
 
 const app = express();
-const PORT = process.env.PORT || 3001;
 
 // Middleware
 const allowedOrigins = process.env.FRONTEND_URL 
@@ -30,9 +30,7 @@ const allowedOrigins = process.env.FRONTEND_URL
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
     if (!origin) return callback(null, true);
-    
     if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
       callback(null, true);
     } else {
@@ -46,19 +44,16 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Body parser for JSON (except webhooks which need raw body)
 // Webhooks need raw body, so they're handled first
 app.use('/api/webhooks', webhookRoutes);
 
 // Apply rate limiting to API routes (except webhooks)
-app.use('/api', rateLimiter(15 * 60 * 1000, 100)); // 100 requests per 15 minutes
+app.use('/api', rateLimiter(15 * 60 * 1000, 100));
 
 // Health check with database connectivity
 app.get('/health', async (req, res) => {
   try {
-    // Test database connection
     const { error } = await supabase.from('products').select('id').limit(1);
-    
     if (error) {
       return res.status(503).json({ 
         status: 'unhealthy', 
@@ -66,7 +61,6 @@ app.get('/health', async (req, res) => {
         timestamp: new Date().toISOString() 
       });
     }
-    
     res.json({ 
       status: 'ok', 
       database: 'connected',
@@ -99,16 +93,6 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
-
-// Only start server if not in Vercel (serverless) environment
-// Vercel will use the exported app from api/index.js
-if (process.env.VERCEL !== '1') {
-  app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
-    console.log(`📦 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`🔗 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
-  });
-}
 
 // Export app for Vercel serverless functions
 export default app;

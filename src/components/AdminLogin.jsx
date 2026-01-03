@@ -8,7 +8,16 @@ const AdminLogin = ({ onLogin }) => {
   // Simple password authentication - in production, use proper auth
   const handleSubmit = (e) => {
     e.preventDefault()
-    if (password === 'admin123') {
+    
+    // Get admin password from environment or use default for development
+    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD || 'admin123'
+    
+    if (!password.trim()) {
+      setError('Please enter a password')
+      return
+    }
+    
+    if (password === adminPassword) {
       setError('')
       onLogin()
     } else {
@@ -36,7 +45,9 @@ const AdminLogin = ({ onLogin }) => {
             Login
           </button>
         </form>
-        <p className="admin-login-hint">Default password: admin123</p>
+        {process.env.NODE_ENV === 'development' && (
+          <p className="admin-login-hint">Default password: admin123</p>
+        )}
       </div>
     </div>
   )

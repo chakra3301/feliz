@@ -31,3 +31,6 @@ public/background.gif
 .env.production
 server/.env
 server/.env.local
+
+# Vercel
+.vercel
