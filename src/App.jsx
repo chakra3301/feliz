@@ -182,7 +182,8 @@ function App() {
           <img src={jewImage} alt="Jew" className="jew-image" />
         </div>
       </div>
-    </Router>
+      </Router>
+    </ErrorBoundary>
   )
 }
 
