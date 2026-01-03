@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 public/background.gif
+
+# Environment variables
+.env
+.env.local
+.env.production
+server/.env
+server/.env.local

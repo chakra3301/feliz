@@ -5,6 +5,10 @@ import ProductGrid from './components/ProductGrid'
 import ProductPage from './components/ProductPage'
 import Cart from './components/Cart'
 import Footer from './components/Footer'
+import AdminLogin from './components/AdminLogin'
+import AdminDashboard from './components/AdminDashboard'
+import CheckoutSuccess from './pages/CheckoutSuccess'
+import CheckoutCancel from './pages/CheckoutCancel'
 import { products } from './data/products'
 import nuggetImage from '../assets/nugget.png'
 import jewImage from '../assets/jew.png'
@@ -15,6 +19,7 @@ function App() {
   const [isCartOpen, setIsCartOpen] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState(null)
   const [isNuggetShaking, setIsNuggetShaking] = useState(false)
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState(false)
 
   const playBurpSound = () => {
     try {
@@ -123,6 +128,24 @@ function App() {
                   onAddToCart={addToCart}
                 />
               } 
+            />
+            <Route 
+              path="/admin" 
+              element={
+                isAdminLoggedIn ? (
+                  <AdminDashboard onLogout={() => setIsAdminLoggedIn(false)} />
+                ) : (
+                  <AdminLogin onLogin={() => setIsAdminLoggedIn(true)} />
+                )
+              } 
+            />
+            <Route 
+              path="/checkout/success" 
+              element={<CheckoutSuccess />} 
+            />
+            <Route 
+              path="/checkout/cancel" 
+              element={<CheckoutCancel />} 
             />
           </Routes>
         </main>
